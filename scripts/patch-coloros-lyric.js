@@ -19,7 +19,7 @@ const TARGET = path.join(
   'com', 'guichaguri', 'trackplayer', 'service', 'metadata', 'MetadataManager.java'
 )
 
-const MARKER = '// coloros-lyric v3'
+const MARKER = '// coloros-lyric v6'
 
 const ANCHOR = `      if (data.containsKey("lyric")) {
         prevMetadata.putString("android.media.metadata.LYRICS", data.getString("lyric"));
@@ -35,6 +35,8 @@ const PATCHED = ANCHOR + `
         String lyricLrc = data.getString("lyricLrc");
         prevMetadata.putString("android.media.metadata.LYRICS_LRC", lyricLrc);
         prevMetadata.putString("lyrics", lyricLrc);
+        // ColorOS 私有能力开关，缺这个系统不会给歌词入口
+        prevMetadata.putString("oplus.media.config", "1");
       }
       if (data.containsKey("lyricText")) {
         String lyricText = data.getString("lyricText");

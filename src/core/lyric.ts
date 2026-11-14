@@ -76,6 +76,8 @@ const publishLockScreenLyric = (rawLyric: string) => {
       album: musicInfo.album ?? '',
       lyricType: 0,
       lyric: lrc,
+      // capsule：ColorOS 用于歌词胶囊/入口的纯文本，去掉时间戳，截断 200 字符
+      capsule: text.slice(0, 200),
       noLyric: false,
     })
   }
