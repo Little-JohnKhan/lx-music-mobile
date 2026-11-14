@@ -20,6 +20,7 @@ import playerState from '@/store/player/state'
 import settingState from '@/store/setting/state'
 import { updateNowPlayingTitles } from '@/plugins/player/utils'
 import { log } from '@/utils/log'
+import { Platform, ToastAndroid } from 'react-native'
 
 /**
  * init lyric
@@ -58,6 +59,8 @@ const normalizeLrc = (raw: string): string => {
  * MediaMetadata.extras["android.media.metadata.LYRICS_LRC"] 和 extras["lyrics"]，
  * 值为带时间轴的 LRC。lyricInfo 那套 JSON 契约属于另一条路径，一起发不冲突。
  */
+let toastShownForId: string | null = null
+
 const publishLockScreenLyric = (rawLyric: string) => {
   const musicInfo = playerState.musicInfo
   const lrc = normalizeLrc(rawLyric)
@@ -83,6 +86,12 @@ const publishLockScreenLyric = (rawLyric: string) => {
   }
 
   apply()
+  // 调试用：确认 JS 侧真的把歌词发出去了
+  // 调试用：确认 JS 侧真的把歌词发出去了（每首歌只提示一次，避免系统 Toast 限流）
+  if (lrc && Platform.OS === 'android' && toastShownForId !== musicId) {
+    toastShownForId = musicId
+    ToastAndroid.show(`[ColorOS] 已发送 ${lrc.length} 字符 / ${lrc.split('\n').length} 行`, ToastAndroid.LONG)
+  }
   log.info('[ColorOS lyric]', musicId ?? '-', lrc.length, 'chars,', lrc ? lrc.split('\n').length : 0, 'lines')
   // 切歌瞬间播放器可能刚重建 MediaMetadata，延迟补发一次，避免刚写入的歌词被覆盖掉。
   // 补发前校验歌曲未变，防止快速切歌时把上一首的歌词贴到新歌上。
