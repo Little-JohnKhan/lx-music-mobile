@@ -53,34 +53,40 @@ const normalizeLrc = (raw: string): string => {
  * MediaMetadata.extras["lyricInfo"] 读取整条歌词时间轴，然后自己按
  * 播放进度渲染锁屏与 AOD 歌词页，因此这里只需要在歌词变化时发布一次。
  */
+/**
+ * ColorOS 17 的锁屏歌词真正读取的两个 key 是
+ * MediaMetadata.extras["android.media.metadata.LYRICS_LRC"] 和 extras["lyrics"]，
+ * 值为带时间轴的 LRC。lyricInfo 那套 JSON 契约属于另一条路径，一起发不冲突。
+ */
 const publishLockScreenLyric = (rawLyric: string) => {
   const musicInfo = playerState.musicInfo
-  const lyric = normalizeLrc(rawLyric)
+  const lrc = normalizeLrc(rawLyric)
+  const text = lrc
+    ? lrc.split('\n').map(line => line.replace(/^\[\d{1,3}:\d{1,2}(?:[.:]\d{1,3})?\]/, '')).filter(Boolean).join('\n')
+    : ''
   let lyricInfo = ''
-  if (lyric) {
-    // 先只发最小必需字段：翻译轨道一旦和主线对不齐，可能连带主线一起被系统丢掉，
-    // 等锁屏能正常显示歌词后再把 translationLyric 加回来。
+  if (lrc) {
     lyricInfo = JSON.stringify({
       songId: musicInfo.id ?? '',
       songName: musicInfo.name ?? '',
       artist: musicInfo.singer ?? '',
       album: musicInfo.album ?? '',
       lyricType: 0,
-      lyric,
+      lyric: lrc,
       noLyric: false,
     })
   }
 
   const musicId = musicInfo.id
   const apply = () => {
-    void updateNowPlayingTitles({ lyricInfo })
+    void updateNowPlayingTitles({ lyricInfo, lyricLrc: lrc, lyricText: text })
   }
 
   apply()
-  log.info('[ColorOS lyric]', musicId ?? '-', lyricInfo.length, 'chars,', lyric ? lyric.split('\n').length : 0, 'lines')
+  log.info('[ColorOS lyric]', musicId ?? '-', lrc.length, 'chars,', lrc ? lrc.split('\n').length : 0, 'lines')
   // 切歌瞬间播放器可能刚重建 MediaMetadata，延迟补发一次，避免刚写入的歌词被覆盖掉。
   // 补发前校验歌曲未变，防止快速切歌时把上一首的歌词贴到新歌上。
-  if (lyricInfo) {
+  if (lrc) {
     setTimeout(() => {
       if (playerState.musicInfo.id === musicId) apply()
     }, 1200)

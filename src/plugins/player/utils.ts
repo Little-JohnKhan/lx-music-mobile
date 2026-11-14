@@ -178,6 +178,10 @@ export interface NowPlayingTitles {
    * 由系统 SystemUI 从 MediaMetadata.extras["lyricInfo"] 读取
    */
   lyricInfo?: string
+  /** 带时间轴的 LRC 原文，写入 LYRICS_LRC / lyrics 两个 key */
+  lyricLrc?: string
+  /** 纯文本歌词，写入 LYRICS / lyric 两个 key */
+  lyricText?: string
 }
 export const updateNowPlayingTitles = async(titles: NowPlayingTitles) => {
   // console.log('set playing titles', titles)
