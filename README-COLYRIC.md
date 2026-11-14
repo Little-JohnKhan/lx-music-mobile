@@ -59,6 +59,24 @@ ColorOS 的锁屏歌词不是 App 画的，是 `com.android.systemui` 自己渲�
 3. push 后 Actions 自动跑 `Build ColorOS Lyric APK`，也可以手动 `Run workflow`。
 4. 跑完在 Actions 页面底部 `Artifacts` 下载 `lx-music-coloros-lyric`，解压后取 `app-arm64-v8a-release.apk`（一加 PLC110 用这个）。
 
+## 伪装包名（绕过厂商歌词白名单）
+
+`android/app/build.gradle` 里的 `applicationId` 已改成可覆盖：
+
+```gradle
+applicationId project.hasProperty('LX_APP_ID') ? project.property('LX_APP_ID').toString() : "cn.toside.music.mobile"
+```
+
+workflow 里传了 `-PLX_APP_ID=com.gaana`，所以打出来的包 **applicationId 是 `com.gaana`**（Gaana 是 OPPO 印度市场的合作音乐平台，包名大概率在 ColorOS 的媒体白名单里）。
+
+由此带来的影响：
+
+- 装之前必须先卸载设备上已有的 `com.gaana`（签名冲突），以及可以保留 `cn.toside.music.mobile` 那份，两者数据互不相通；
+- 桌面图标和应用名还是「洛雪音乐」，只有包名变了；
+- 想换回原包名：删掉 workflow 里的 `-PLX_APP_ID=com.gaana` 重新构建即可。
+
+如果这次能出歌词，就证明 ColorOS 是按包名放行的；如果依然没有，说明白名单还校验签名或其他信息，那就只能走 root 方案。
+
 ## 怎么确认补丁真的跑了
 
 洛雪自带日志页：**设置 → 其他 → 日志**。每次切歌/歌词加载时会出现一行

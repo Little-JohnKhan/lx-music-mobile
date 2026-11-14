@@ -41,6 +41,7 @@ jobs:
         run: |
           chmod +x gradlew
           ./gradlew assembleRelease --no-daemon \
+            -PLX_APP_ID=com.gaana \
             -PMYAPP_UPLOAD_STORE_FILE=debug.keystore \
             -PMYAPP_UPLOAD_KEY_ALIAS=androiddebugkey \
             -PMYAPP_UPLOAD_STORE_PASSWORD=android \

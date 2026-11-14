@@ -110,7 +110,8 @@ android {
 
     namespace "cn.toside.music.mobile"
     defaultConfig {
-        applicationId "cn.toside.music.mobile"
+        // 允许用 -PLX_APP_ID=xxx 覆盖 applicationId，用于绕过厂商的包名白名单（测试用途）
+        applicationId project.hasProperty('LX_APP_ID') ? project.property('LX_APP_ID').toString() : "cn.toside.music.mobile"
         minSdkVersion rootProject.ext.minSdkVersion
         targetSdkVersion rootProject.ext.targetSdkVersion
         versionCode verCode
