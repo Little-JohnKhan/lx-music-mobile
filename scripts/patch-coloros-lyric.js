@@ -1,15 +1,15 @@
 #!/usr/bin/env node
 /**
- * ColorOS / OPlus 锁屏歌词补丁（v7）
+ * ColorOS / OPlus 锁屏歌词补丁（v8）
  *
- * 解决的坑：track-player 在切歌、封面加载完成等时机都会重新 new 一个
- * MediaMetadata.Builder 再 setMetadata，把我们写进去的歌词字段全部冲掉，
- * 导致锁屏歌词入口按钮闪一下就消失。
+ * 背景：track-player 在切歌、封面加载完成等时机都会重新 new 一个
+ * MediaMetadata.Builder 再 setMetadata，把歌词字段冲掉，导致锁屏歌词入口消失。
  *
  * 做法：
- *   1. 用字段记住最近一次的歌词数据；
+ *   1. 用字段记住最近一次发布的歌词；
  *   2. 所有 setMetadata(metadata.build()) 出口统一走 applyColorOsLyric() 补字段；
- *   3. 切歌时清空，等待 JS 重新发布。
+ *   3. 切歌时**不清空**，避免系统在切歌瞬间判定“无歌词能力”，
+ *      新歌歌词到达后由 JS 覆盖即可。
  *
  * 必须在 npm ci / npm install 之后执行（node_modules 就绪后）。
  */
@@ -21,7 +21,7 @@ const TARGET = path.join(
   'com', 'guichaguri', 'trackplayer', 'service', 'metadata', 'MetadataManager.java'
 )
 
-const MARKER = '// coloros-lyric v7'
+const MARKER = '// coloros-lyric v8'
 
 const FIELDS_ANCHOR = `    private MediaMetadataCompat.Builder prevMetadata = null;`
 
@@ -69,14 +69,6 @@ const LYRIC_NEW = LYRIC_ANCHOR + `
       }
       applyColorOsLyric(prevMetadata); ${MARKER}`
 
-const CLEAR_ANCHOR = `    public void updateMetadata(ExoPlayback playback, TrackMetadata track, boolean isPlaying) {`
-
-const CLEAR_NEW = CLEAR_ANCHOR + `
-        // coloros-lyric: 切歌时清空上一首的歌词，等 JS 重新发布
-        colorOsLyricLrc = null;
-        colorOsLyricText = null;
-        colorOsLyricInfo = null;`
-
 const SETMETA_OLD = `session.setMetadata(metadata.build());`
 const SETMETA_NEW = `session.setMetadata(applyColorOsLyric(metadata).build());`
 
@@ -107,20 +99,18 @@ function main() {
 
   // 1. 字段
   if (!s.includes('colorOsLyricLrc')) s = replaceOnce(s, FIELDS_ANCHOR, FIELDS_NEW, 'prevMetadata 字段')
-  // 2. helper
+  // 2. helper 方法
   if (!s.includes('applyColorOsLyric')) s = replaceOnce(s, HELPER_ANCHOR, HELPER_NEW, 'updateTitles 方法')
-  // 3. updateTitles 内部逻辑
+  // 3. updateTitles 内部逻辑（记住字段并补写）
   s = replaceOnce(s, LYRIC_ANCHOR, LYRIC_NEW, 'lyric 分支')
-  // 4. 切歌清空
-  if (!s.includes('切歌时清空上一首的歌词')) s = replaceOnce(s, CLEAR_ANCHOR, CLEAR_NEW, 'updateMetadata 方法')
-  // 5. 所有 setMetadata 出口
+  // 4. 所有 setMetadata 出口补字段
   s = replaceOnce(s, SETMETA_OLD, SETMETA_NEW, 'session.setMetadata 调用')
 
   if (isCrlf) s = s.replace(/\n/g, '\r\n')
   fs.writeFileSync(TARGET, s)
 
   const setMetaCount = s.split(SETMETA_NEW).length - 1
-  console.log('[coloros-lyric] 补丁已应用：字段记忆 + ' + setMetaCount + ' 处 setMetadata 出口补字段')
+  console.log('[coloros-lyric] 补丁已应用：字段记忆 + ' + setMetaCount + ' 处 setMetadata 出口补字段（切歌不清空）')
 }
 
 main()
