@@ -59,6 +59,17 @@ ColorOS 的锁屏歌词不是 App 画的，是 `com.android.systemui` 自己渲�
 3. push 后 Actions 自动跑 `Build ColorOS Lyric APK`，也可以手动 `Run workflow`。
 4. 跑完在 Actions 页面底部 `Artifacts` 下载 `lx-music-coloros-lyric`，解压后取 `app-arm64-v8a-release.apk`（一加 PLC110 用这个）。
 
+## 怎么确认补丁真的跑了
+
+洛雪自带日志页：**设置 → 其他 → 日志**。每次切歌/歌词加载时会出现一行
+
+```
+[ColorOS lyric] <歌曲id> <字节数> chars, <行数> lines
+```
+
+- 没有这行 → JS 层没执行到发布逻辑，问题在代码；
+- 有这行但锁屏没歌词 → 数据发出去了，是系统侧没消费（准入/字段问题）。
+
 ## 注意事项
 
 - **签名和官方版不同**：装之前必须先卸载官方洛雪，否则会提示签名冲突。卸载前先在 App 里把歌曲列表备份成文件（设置 → 备份与恢复）或同步到 WebDAV。
