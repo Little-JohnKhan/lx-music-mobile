@@ -4,6 +4,7 @@
   "versionCode": 79,
   "private": true,
   "scripts": {
+    "postinstall": "node scripts/patch-coloros-lyric.js",
     "dev": "react-native run-android --active-arch-only",
     "ios": "react-native run-ios",
     "start": "react-native start",

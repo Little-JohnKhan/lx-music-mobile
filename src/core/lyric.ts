@@ -28,6 +28,47 @@ export const init = async() => {
 }
 
 /**
+ * 发布 ColorOS / OPlus 原生锁屏歌词
+ *
+ * 系统侧（com.android.systemui）只从当前 MediaSession 的
+ * MediaMetadata.extras["lyricInfo"] 读取整条歌词时间轴，然后自己按
+ * 播放进度渲染锁屏与 AOD 歌词页，因此这里只需要在歌词变化时发布一次。
+ */
+const publishLockScreenLyric = (lyric: string, translation: string) => {
+  let lyricInfo = ''
+  if (lyric) {
+    const musicInfo = playerState.musicInfo
+    const payload: Record<string, unknown> = {
+      songId: musicInfo.id ?? '',
+      songName: musicInfo.name ?? '',
+      artist: musicInfo.singer ?? '',
+      album: musicInfo.album ?? '',
+      lyricType: 0,
+      lyric,
+      noLyric: false,
+    }
+    // 翻译必须是带时间轴的 LRC，且行起始时间与主歌词一致；
+    // 罗马音 / 音译不能放进这个字段，否则锁屏会当成翻译显示
+    if (translation) payload.translationLyric = translation
+    lyricInfo = JSON.stringify(payload)
+  }
+
+  const musicId = playerState.musicInfo.id
+  const apply = () => {
+    void updateNowPlayingTitles({ lyricInfo })
+  }
+
+  apply()
+  // 切歌瞬间播放器可能刚重建 MediaMetadata，延迟补发一次，避免刚写入的歌词被覆盖掉。
+  // 补发前校验歌曲未变，防止快速切歌时把上一首的歌词贴到新歌上。
+  if (lyricInfo) {
+    setTimeout(() => {
+      if (playerState.musicInfo.id === musicId) apply()
+    }, 1200)
+  }
+}
+
+/**
  * set lyric
  * @param lyric lyric str
  * @param translation lyric translation
@@ -40,6 +81,7 @@ const handleSetLyric = async(lyric: string, translation = '', romalrc = '') => {
       lyric,
     })
   }
+  publishLockScreenLyric(lyric, translation)
 }
 
 /**

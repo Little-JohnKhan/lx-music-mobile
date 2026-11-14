@@ -173,6 +173,11 @@ export interface NowPlayingTitles {
   artist?: string
   album?: string
   lyric?: string
+  /**
+   * ColorOS / OPlus 锁屏歌词专用字段，值为 JSON 字符串
+   * 由系统 SystemUI 从 MediaMetadata.extras["lyricInfo"] 读取
+   */
+  lyricInfo?: string
 }
 export const updateNowPlayingTitles = async(titles: NowPlayingTitles) => {
   // console.log('set playing titles', titles)
